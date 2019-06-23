@@ -17,11 +17,11 @@ GPIO.setup(servo,GPIO.OUT)
 # duty cycle for 180 degree = (2/20)*100 = 10%
 
 p=GPIO.PWM(servo,50)# 50hz frequency
-p.start(7.5)# starting duty cycle ( it set the servo to 0 degree )
+p.start(6)# starting duty cycle ( it set the servo to 0 degree )
 
 def turnServo(angle):
        if angle > -1 and angle < 181:
-              turnVal = 5 + (5 * (180/angle))
+              turnVal = 2.2 + (8.8 * (180/angle))
               try:
                      p.ChangeDutyCycle(turnVal)
                          
