@@ -2,6 +2,8 @@ from threading import Thread
 import RPi.GPIO as GPIO
 from time import time
 from enum import Enum
+import Uss
+import Servo
 
 class Drive(Enum):
     STOP = 1
@@ -147,3 +149,59 @@ class PiCar(Thread):
     def setDestGPS(self, longitude, latitude):
         self.destLongitude = longitude
         self.destLatitude = latitude
+
+    # Konstanten für automatisches Ausweichen
+    tries = 3
+    minSpace =
+    tryAngles = [90, 45, 75, 115, 135]
+
+    # Messvorgang: Distanz vor Wagen
+    def measure():
+        space = 0
+        if tries < 1: tries = 1
+        for i in range(tries):
+            spaces += Uss.getDistance()
+        space /= tries
+        return space
+
+    # Distanz vor Wagen messen und bei Bedarf Objekten ausweichen
+    def objectAvoiding(cont):
+        if cont == False:
+            space = measure()
+            if space < minSpace: cont = True
+        
+        if cont == True:
+            self.stop()
+            i = 0
+            measurements = []
+            for angle in tryAngles:
+                measurements[i] = measure()
+                i++
+
+            bestMatch = [-1, 100000]
+            for i in range(len(tryAngles)):
+                Servo.turnServo(tryAngles[i])
+                time.sleep(1)
+                if measurements[i] < bestMatch[1]:
+                    bestMatch[0] = i
+                    bestMatch[1] = measurements[i]
+            Servo.turnServo(90)
+            time.sleep(1)
+                    
+            if bestMatch[0] == -1: return False
+            elif bestMatch[1] < minSpace:
+                self.__backward()
+                sleep(0.7)
+                self.stop()
+                objectAvoiding(True)
+            else:
+                #turn car to tryAngle[bestMatch[0]]
+                self.__forward()
+                if objectAvoiding(False) == False: return False
+                else:
+                    #turn car back
+                    if measure() > minSpace:
+                        self.__forward()
+                        return objectAvoiding(False)
+
+        else: return True
