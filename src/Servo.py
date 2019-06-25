@@ -2,6 +2,7 @@ import RPi.GPIO as GPIO
 import time
 
 servo = 10
+sleeptime = 0.7
 
 GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BCM)
@@ -18,16 +19,17 @@ GPIO.setup(servo,GPIO.OUT)
 
 p = GPIO.PWM(servo,50)# 50hz frequency
 p.start(6.6)# starting duty cycle ( it set the servo to 0 degree )
-time.sleep(0.5)
+time.sleep(sleeptime)
 p.stop()
 
 def turnServo(angle):
     if angle > -1 and angle < 181:
         turnVal = 2.2 + (8.8 * (180 / angle))
+        print("Servo drehen: Grad: ", angle, ", turnVal: ", turnVal)
         try:
             p.start(turnVal)
             #p.ChangeDutyCycle(turnVal)
-            time.sleep(0.5)
+            time.sleep(sleeptime)
             p.stop()
         except KeyboardInterrupt:
             GPIO.cleanup()
