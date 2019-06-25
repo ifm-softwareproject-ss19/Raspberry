@@ -30,17 +30,21 @@ def runServer(car):
         client_sock, client_addr = server_sock.accept()
         print("Verbunden mit: ", client_addr)
 
+        subprocess.call(["/home/pi/Desktop/bluetoothconnected.sh"])
+
         while True:
             try:
-                data = client_sock.recv(1024)
+                data = client_sock.recv(256)
+                client_sock.send(data)
             except IOError:
+                break
+            except:
                 break
             if (len(data) == 0):
                 break
             data = str(data)[2:-1]
             print(str(time()) + ": Empfangen: " + data)
             Main.btInput(data, car)
-            #Main.from_btServer_thread(Main.btInput(data, car))
         
         car.state = State.IDLE
         car.stop()

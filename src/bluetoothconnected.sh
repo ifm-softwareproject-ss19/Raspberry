@@ -1,7 +1,7 @@
 #!/bin/bash
 bluetoothctl << EOF > /dev/null
-discoverable on
-pairable on
+discoverable off
+pairable off
 agent NoInputNoOutput
 default-agent
 EOF

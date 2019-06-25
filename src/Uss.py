@@ -18,6 +18,15 @@ import RPi.GPIO as GPIO
 GPIOTrigger = 18
 GPIOEcho    = 24
 
+GPIO.setwarnings(False)
+# benutze GPIO Pin Nummerierung-Standard (Broadcom SOC channel)
+GPIO.setmode(GPIO.BCM)
+# Initialisiere GPIO Ports
+GPIO.setup(GPIOTrigger, GPIO.OUT)
+GPIO.setup(GPIOEcho, GPIO.IN)
+# Setze GPIO Trigger auf false
+GPIO.output(GPIOTrigger, False)
+
 # Funktion zum messen der Entfernung
 def getDistance():
     # Trigger auf "high" setzen (Signal senden)
@@ -48,30 +57,3 @@ def getDistance():
     Distanz = (SignalLaufzeit/2) * 34350
 
     return SignalLaufzeit/2
-
-# main function
-"""def main():
-    try:
-        while True:
-            Ergebnis = MesseDistanz()
-            print("Gemessene Entfernung: %.1f cm (Signallaufzeit: %.4fms)" % (Ergebnis[0], Ergebnis[1]))
-            time.sleep(1)
-
-    # reset GPIO settings if user pressed Ctrl+C
-    except KeyboardInterrupt:
-        print("Messung abgebrochen")
-        GPIO.cleanup()
-
-if __name__ == '__main__':
-    # benutze GPIO Pin Nummerierung-Standard (Broadcom SOC channel)
-    GPIO.setmode(GPIO.BCM)
-
-    # Initialisiere GPIO Ports
-    GPIO.setup(GPIOTrigger, GPIO.OUT)
-    GPIO.setup(GPIOEcho, GPIO.IN)
-
-    # Setze GPIO Trigger auf false
-    GPIO.output(GPIOTrigger, False)
-
-    # Main-Funktion starten
-    main()"""

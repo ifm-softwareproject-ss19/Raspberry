@@ -6,7 +6,8 @@ from PiCar import *
 def btInput(input, car):
     if(re.search("^\s*automaticDrive\s*\(\s*\-?[0-9]+\.[0-9]+\s*,\s*\-?[0-9]+\.[0-9]+\s*\)\s*$", input)): # automaticDrive(GPS)
         gps = re.findall("\-?[0-9]+\.[0-9]+", input)
-        car.setDestGPS(float(gps[0]), float(gps[1]))
+        car.latitude = float(gps[0])
+        car.longitude = float(gps[1])
         car.state = State.AUTOMATIC
         print(car.state)
         
