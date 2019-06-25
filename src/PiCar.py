@@ -208,7 +208,7 @@ class PiCar(Thread):
             space = self.__measure()
             if space < self.__minSpace: cont = True
         
-        if cont == True:
+        if cont == True and this.state == State.AUTOMATIC:
             self.stop()
             i = 0
             measurements = {}
@@ -224,33 +224,41 @@ class PiCar(Thread):
                     bestMatch[0] = i
                     bestMatch[1] = measurements[i]
             Servo.turnServo(90)
-            sleep(1)
                     
             if bestMatch[0] == -1: return False
             elif bestMatch[1] < self.__minSpace:
-                self.__backward()
-                sleep(0.7)
-                self.stop()
-                self.__objectAvoiding(True)
+                if this.state == State.AUTOMATIC:
+                    self.__backward()
+                    sleep(1)
+                    self.stop()
+                    self.__objectAvoiding(True)
+                else: return False
             else:
                 #turn car to tryAngle[bestMatch[0]]
-                drivingtime = 0
-                if self.__tryAngles[bestMatch[0]] == 90: drivingtime = 2
-                elif self.__tryAngles[bestMatch[0]] < 90:
-                    self.__left()
-                    drivingtime = (self.__turnTime / 2) * ((self.__tryAngles[bestMatch[0]] - 5) / 90)
-                else:
-                    self.__right()
-                    drivingtime = (self.__turnTime / 2) * ((self.__tryAngles[bestMatch[0]]  - 85) / 90)
-                        
-                self.__forward()
-                sleep(drivingtime)
-                self.__stopSteer()
-                if self.__objectAvoiding(False) == False: return False
-                else:
-                    # avoided Object
-                    if self.__measure() > self.__minSpace:
+                if this.state == State.AUTOMATIC:
+                    drivingtime = 0
+                    if self.__tryAngles[bestMatch[0]] == 90: drivingtime = 2
+                    elif self.__tryAngles[bestMatch[0]] < 90:
+                        self.__left()
+                        drivingtime = (self.__turnTime / 2) * ((self.__tryAngles[bestMatch[0]] - 5) / 90)
+                    else:
+                        self.__right()
+                        drivingtime = (self.__turnTime / 2) * ((self.__tryAngles[bestMatch[0]]  - 85) / 90)
+
+                    if this.state == State.AUTOMATIC:
                         self.__forward()
-                        return self.__objectAvoiding(False)
+                        sleep(drivingtime)
+                        self.__stopSteer()
+                        if self.__objectAvoiding(False) == False: return False
+                        else:
+                            # avoided Object
+                            if self.__measure() > self.__minSpace:
+                                if this.state == State.AUTOMATIC:
+                                    self.__forward()
+                                    sleep(1)
+                                    return self.__objectAvoiding(False)
+                                else: return False
+                    else: return False
+                else: return False
 
         else: return True
