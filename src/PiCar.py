@@ -40,7 +40,7 @@ class PiCar(Thread):
         self.steering = Steering.FORWARD
         self.state = State.IDLE
         
-        self.__gpsTolerance = 0.00005
+        self.__gpsTolerance = 0.0005
         self.__directionTolerance = 1
         
         self.__maxInputDelay = 0.5
@@ -52,7 +52,7 @@ class PiCar(Thread):
         
         # Konstanten für automatisches Ausweichen
         self.__tries = 3 # pro try ~0,02 sek benötigt
-        self.__minSpace = 2 # ms x 34,5cm/ms
+        self.__minSpace = 1 # ms x 34,5cm/ms
         self.__tryAngles = [90, 45, 75, 115, 135]
 
         # Pins für den Motor
@@ -73,11 +73,11 @@ class PiCar(Thread):
         while True:
             if(self.state == State.DESTINATION):
                 self.stop()
-                print("sende Ziel erreicht")
+                print("sende Ziel erreicht", self.latitude, self.destLatitude, self.longitude, self.destLongitude)
                 self.state = State.IDLE
             
             elif(self.state == State.AUTOMATIC):
-                #print("Fahre nach %f, %f" % (self.destLongitude, self.destLatitude))
+                print("Fahre nach %f, %f" % (self.destLatitude, self.destLongitude))
                 self.__automaticDrive()
             
             elif(self.state == State.MANUAL):
@@ -134,7 +134,6 @@ class PiCar(Thread):
 
     # Alles stoppen
     def stop(self):
-        self.state = State.IDLE
         GPIO.output(self.__motorDriveForwardPin, GPIO.LOW)
         GPIO.output(self.__motorDriveBackwardPin, GPIO.LOW)
         GPIO.output(self.__motorSteerLeftPin, GPIO.LOW)
@@ -173,6 +172,7 @@ class PiCar(Thread):
     
     def __automaticDrive(self):
         if(self.__objectAvoiding(False)):
+            print("läuft")
             if(abs(self.latitude - self.destLatitude) < self.__gpsTolerance and abs(self.longitude - self.destLongitude) < self.__gpsTolerance):
                 self.stop()
                 self.state = State.DESTINATION
@@ -191,7 +191,9 @@ class PiCar(Thread):
                 self.__forward()
                 self.__stopSteer()
         else:
-            self.state = State.Error
+            print(self.state)
+            #self.state = State.ERROR
+            
     # Messvorgang: Distanz vor Wagen
     def __measure(self):
         space = 0
@@ -204,11 +206,12 @@ class PiCar(Thread):
     
      # Distanz vor Wagen messen und bei Bedarf Objekten ausweichen
     def __objectAvoiding(self, cont):
+        Servo.p.start(6.6)
         if cont == False:
             space = self.__measure()
             if space < self.__minSpace: cont = True
         
-        if cont == True and this.state == State.AUTOMATIC:
+        if cont == True and self.state == State.AUTOMATIC:
             self.stop()
             i = 0
             measurements = {}
@@ -227,7 +230,7 @@ class PiCar(Thread):
                     
             if bestMatch[0] == -1: return False
             elif bestMatch[1] < self.__minSpace:
-                if this.state == State.AUTOMATIC:
+                if self.state == State.AUTOMATIC:
                     self.__backward()
                     sleep(1)
                     self.stop()
@@ -235,17 +238,17 @@ class PiCar(Thread):
                 else: return False
             else:
                 #turn car to tryAngle[bestMatch[0]]
-                if this.state == State.AUTOMATIC:
+                if self.state == State.AUTOMATIC:
                     drivingtime = 0
                     if self.__tryAngles[bestMatch[0]] == 90: drivingtime = 2
                     elif self.__tryAngles[bestMatch[0]] < 90:
-                        self.__left()
+                        self.__right()
                         drivingtime = (self.__turnTime / 2) * ((self.__tryAngles[bestMatch[0]] - 5) / 90)
                     else:
-                        self.__right()
+                        self.__left()
                         drivingtime = (self.__turnTime / 2) * ((self.__tryAngles[bestMatch[0]]  - 85) / 90)
 
-                    if this.state == State.AUTOMATIC:
+                    if self.state == State.AUTOMATIC:
                         self.__forward()
                         sleep(drivingtime)
                         self.__stopSteer()
@@ -253,7 +256,7 @@ class PiCar(Thread):
                         else:
                             # avoided Object
                             if self.__measure() > self.__minSpace:
-                                if this.state == State.AUTOMATIC:
+                                if self.state == State.AUTOMATIC:
                                     self.__forward()
                                     sleep(1)
                                     return self.__objectAvoiding(False)
@@ -262,3 +265,4 @@ class PiCar(Thread):
                 else: return False
 
         else: return True
+        

@@ -20,16 +20,16 @@ GPIO.setup(servo,GPIO.OUT)
 p = GPIO.PWM(servo,50)# 50hz frequency
 p.start(6.6)# starting duty cycle ( it set the servo to 0 degree )
 time.sleep(sleeptime)
-p.stop()
+p.ChangeDutyCycle(0.0)
 
 def turnServo(angle):
     if angle > -1 and angle < 181:
-        turnVal = 2.2 + (8.8 * (180 / angle))
+        turnVal = 2.2 + (8.8 * (angle / 180))
         print("Servo drehen: Grad: ", angle, ", turnVal: ", turnVal)
         try:
-            p.start(turnVal)
-            #p.ChangeDutyCycle(turnVal)
+            #p.start(turnVal)
+            p.ChangeDutyCycle(turnVal)
             time.sleep(sleeptime)
-            p.stop()
+            p.ChangeDutyCycle(0.0)
         except KeyboardInterrupt:
             GPIO.cleanup()

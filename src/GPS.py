@@ -7,7 +7,7 @@ port = "/dev/ttyS0"
 baudrate = 9600
 timeout = 0.5
 
-tolerance = 0.00005
+tolerance = 0.0005
 
 def readGPS(car):
     ser = serial.Serial(port = port, baudrate = baudrate, timeout = timeout)
@@ -15,6 +15,7 @@ def readGPS(car):
     while True:
         try:
             data = ser.readline().decode('utf-8')
+            #print(data)
         except serial.serialutil.SerialException:
             ser = serial.Serial(port = port, baudrate = baudrate, timeout = timeout)
         except:

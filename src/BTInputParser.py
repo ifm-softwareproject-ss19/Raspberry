@@ -6,8 +6,8 @@ from PiCar import *
 def btInput(input, car):
     if(re.search("^\s*automaticDrive\s*\(\s*\-?[0-9]+\.[0-9]+\s*,\s*\-?[0-9]+\.[0-9]+\s*\)\s*$", input)): # automaticDrive(GPS)
         gps = re.findall("\-?[0-9]+\.[0-9]+", input)
-        car.latitude = float(gps[0])
-        car.longitude = float(gps[1])
+        car.destLatitude = float(gps[0])
+        car.destLongitude = float(gps[1])
         car.state = State.AUTOMATIC
         print(car.state)
         
@@ -36,9 +36,9 @@ def btInput(input, car):
         car.setState = State.AUTOMATIC
         print("Weiter zum Ziel fahren")
      
-    elif(re.search("^\s*manualDirection\s*\(\s*stop|front|back\s*,\s*forward|left|right\s*\)\s*$", input)): # manualDirection(Drive direction1, Steering direction2)
-        drive = re.findall("stop|front|back", input)[0]
-        steering = re.findall("forward|left|right", input)[0]
+    elif(re.search("^\s*manualDirection\s*\(\s*stop|front|back\s*,\s*forward|left|right\s*\)\s*$", input, flags = re.IGNORECASE)): # manualDirection(Drive direction1, Steering direction2)
+        drive = re.findall("stop|front|back", input, flags = re.IGNORECASE)[0]
+        steering = re.findall("forward|left|right", input, flags = re.IGNORECASE)[0]
         car.drive = Drive[drive.upper()]
         car.steering = Steering[steering.upper()]
         car.manualInput()
