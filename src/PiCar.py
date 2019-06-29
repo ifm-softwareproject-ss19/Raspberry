@@ -6,6 +6,8 @@ from GPS import calcDirection
 import Uss
 import Servo
 
+DEBUG = True
+
 class Drive(Enum):
     STOP = 1
     FRONT = 2
@@ -94,13 +96,13 @@ class PiCar(Thread):
     def __forward(self):
         GPIO.output(self.__motorDriveForwardPin, GPIO.HIGH)
         GPIO.output(self.__motorDriveBackwardPin, GPIO.LOW)
-        #print("Vorwärts fahren")
+        if DEBUG: print("Vorwärts fahren")
 
     # Rückwärts fahren
     def __backward(self):
         GPIO.output(self.__motorDriveForwardPin, GPIO.LOW)
         GPIO.output(self.__motorDriveBackwardPin, GPIO.HIGH)
-        #print("Rückwärts fahren")
+        if DEBUG: print("Rückwärts fahren")
 
     # Nach links lenken
     def __left(self):
@@ -109,7 +111,7 @@ class PiCar(Thread):
             #GPIO.output(self.__motorSteerRightPin, GPIO.HIGH)
         GPIO.output(self.__motorSteerLeftPin, GPIO.HIGH)
         GPIO.output(self.__motorSteerRightPin, GPIO.LOW)
-        #print("Links fahren")
+        if DEBUG: print("Links fahren")
 
     # Nach rechts lenken
     def __right(self):
@@ -118,19 +120,19 @@ class PiCar(Thread):
             #GPIO.output(self.__motorSteerRightPin, GPIO.LOW)
         GPIO.output(self.__motorSteerLeftPin, GPIO.LOW)
         GPIO.output(self.__motorSteerRightPin, GPIO.HIGH)
-        #print("Rechts fahren")
+        if DEBUG: print("Rechts fahren")
 
     # Fahren stoppen
     def __stopDrive(self):
         GPIO.output(self.__motorDriveForwardPin, GPIO.LOW)
         GPIO.output(self.__motorDriveBackwardPin, GPIO.LOW)
-        #print("Fahren stoppen")
+        if DEBUG: print("Fahren stoppen")
 
     # Lenken stoppen
     def __stopSteer(self):
         GPIO.output(self.__motorSteerLeftPin, GPIO.LOW)
         GPIO.output(self.__motorSteerRightPin, GPIO.LOW)
-        #print("Lenken stoppen")
+        if DEBUG: print("Lenken stoppen")
 
     # Alles stoppen
     def stop(self):
@@ -202,6 +204,8 @@ class PiCar(Thread):
             space += Uss.getDistance()
             if i < self.__tries: sleep(0.02)
         space /= self.__tries
+        space = space * 1000 / 2
+        if DEBUG: print("Distanz gemessen: ", space)
         return space * 1000 / 2
     
      # Distanz vor Wagen messen und bei Bedarf Objekten ausweichen
@@ -213,6 +217,7 @@ class PiCar(Thread):
         
         if cont == True and self.state == State.AUTOMATIC:
             self.stop()
+            if DEBUG: print("Weiche aus")
             i = 0
             measurements = {}
             for angle in self.__tryAngles:
@@ -227,7 +232,8 @@ class PiCar(Thread):
                     bestMatch[0] = i
                     bestMatch[1] = measurements[i]
             Servo.turnServo(90)
-                    
+
+            if DEBUG: print("Best Match: ", bestMatch)
             if bestMatch[0] == -1: return False
             elif bestMatch[1] < self.__minSpace:
                 if self.state == State.AUTOMATIC:
@@ -242,9 +248,11 @@ class PiCar(Thread):
                     drivingtime = 0
                     if self.__tryAngles[bestMatch[0]] == 90: drivingtime = 2
                     elif self.__tryAngles[bestMatch[0]] < 90:
+                        if DEBUG: print("Weiche nach rechts aus")
                         self.__right()
                         drivingtime = (self.__turnTime / 2) * ((self.__tryAngles[bestMatch[0]] - 5) / 90)
                     else:
+                        if DEBUG: print("Weiche nach links aus")
                         self.__left()
                         drivingtime = (self.__turnTime / 2) * ((self.__tryAngles[bestMatch[0]]  - 85) / 90)
 
@@ -255,6 +263,7 @@ class PiCar(Thread):
                         if self.__objectAvoiding(False) == False: return False
                         else:
                             # avoided Object
+                            if DEBUG: print("Objekt teilweise oder komplett ausgewichen")
                             if self.__measure() > self.__minSpace:
                                 if self.state == State.AUTOMATIC:
                                     self.__forward()
