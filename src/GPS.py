@@ -25,10 +25,8 @@ def readGPS(car):
                 gpsData = pynmea2.parse(data)
                 if(abs(car.latitude - gpsData.latitude) > tolerance or abs(car.longitude - gpsData.longitude) > tolerance):
                     car.direction = calcDirection((gpsData.latitude, gpsData.longitude), (car.latitude, car.longitude))
-                    if(abs(car.latitude - gpsData.latitude) > tolerance):
-                        car.latitude = gpsData.latitude
-                    if(abs(car.longitude - gpsData.longitude) > tolerance):
-                        car.longitude = gpsData.longitude
+                    car.latitude = gpsData.latitude
+                    car.longitude = gpsData.longitude
                     car.destDirection = calcDirection((car.latitude, car.longitude), (car.destLatitude, car.destLongitude))
                     print(car.latitude, car.longitude, car.direction, car.destDirection)
             except pynmea2.nmea.ChecksumError:

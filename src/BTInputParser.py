@@ -1,25 +1,46 @@
 import re
-from time import time
+from time import sleep
+import threading
+from threading import Thread
 
 from PiCar import *
 
-def btInput(input, car):
+intervalSender = None
+condition = None
+stop_thread = False
+
+def getStopThread():
+    global stop_thread
+    return stop_thread
+
+def intervalSend(interval, car, btSocket):
+    getGpsData(car, btSocket)
+    global stop_thread
+    stop_thread = False
+    while not stop_thread:
+        with condition:
+            if(not condition.wait_for(getStopThread, interval)):
+                getGpsData(car, btSocket)
+
+def btInput(input, car, btSocket):
     if(re.search("^\s*automaticDrive\s*\(\s*\-?[0-9]+\.[0-9]+\s*,\s*\-?[0-9]+\.[0-9]+\s*\)\s*$", input)): # automaticDrive(GPS)
         gps = re.findall("\-?[0-9]+\.[0-9]+", input)
-        car.destLatitude = float(gps[0])
-        car.destLongitude = float(gps[1])
-        car.state = State.AUTOMATIC
-        print(car.state)
+        latitude = float(gps[0])
+        longitude = float(gps[1])
+        automaticDrive(car, latitude, longitude)
         
     elif(re.search("^\s*getGpsData\s*\(\s*\)\s*$", input)): # getGpsData()
-        print("Sende aktuelle GPS Daten...")
+        getGpsData(car, btSocket)
         
     elif(re.search("^\s*startGpsData\s*\(\s*[0-9]+\s*\)\s*$", input)): # startGpsData(int interval)
         interval = float(re.findall("[0-9]+", input)[0])
-        print("Sende alle %d Sekunden GPS Daten" % (interval))
+        if(interval > 0):
+            startGpsData(interval, car, btSocket)
+        else:
+            getGpsData(car, btSocket)
         
     elif(re.search("^\s*stopGpsData\s*\(\s*\)\s*$", input)): # stopGpsData()
-        print("Stoppe senden von GPS Daten")
+        stopGpsData()
     
     elif(re.search("^\s*startManualDrive\s*\(\s*\)\s*$", input)): # startManualDrive()
         car.startManualDrive()
@@ -49,3 +70,35 @@ def btInput(input, car):
 
     else:
         print("Ungültige Eingabe...")
+
+def automaticDrive(car, latitude, longitude):
+    car.destLatitude = latitude
+    car.destLongitude = longitude
+    car.state = State.AUTOMATIC
+    print(car.state)
+
+def getGpsData(car, btSocket):
+    try:
+        btSocket.send("sendLocation(" + str(car.latitude) + ", " + str(car.longitude) + ")")
+        print("Sende aktuelle GPS Daten...")
+    except:
+        stopGpsData()
+    
+def startGpsData(interval, car, btSocket):
+    global intervalSender
+    global condition
+    if(condition == None):
+        condition = threading.Condition()
+    while(intervalSender != None and intervalSender.is_alive()):
+        stopGpsData()
+    intervalSender = Thread(target = intervalSend, args = (interval, car, btSocket), name = "intervalSender")
+    intervalSender.start()
+    print("Sende alle %d Sekunden GPS Daten" % (interval))
+    
+def stopGpsData():
+    global condition
+    global stop_thread
+    with condition:
+        stop_thread = True
+        condition.notify()
+    print("Stoppe senden von GPS Daten")

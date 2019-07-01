@@ -47,7 +47,7 @@ class PiCar(Thread):
         
         self.__maxInputDelay = 0.5
         self.__lastManualInput = 0
-        self.__turnTime = 2
+        self.__turnTime = 3
         self.__turnCooldown = 2
         self.__turnTimer = 0
         self.__turnCooldownTimer = 0
@@ -91,13 +91,12 @@ class PiCar(Thread):
             elif(self.state == State.ERROR):
                 pass
             
-            
     # Vorwärts fahren
     def __forward(self):
         GPIO.output(self.__motorDriveForwardPin, GPIO.HIGH)
         GPIO.output(self.__motorDriveBackwardPin, GPIO.LOW)
         if DEBUG: print("Vorwärts fahren")
-
+        
     # Rückwärts fahren
     def __backward(self):
         GPIO.output(self.__motorDriveForwardPin, GPIO.LOW)
@@ -106,18 +105,12 @@ class PiCar(Thread):
 
     # Nach links lenken
     def __left(self):
-        #if(GPIO.input(self.__motorSteerRightPin) == GPIO.LOW and GPIO.input(self.__motorSteerLeftPin) == GPIO.LOW):
-            #GPIO.output(self.__motorSteerLeftPin, GPIO.LOW)
-            #GPIO.output(self.__motorSteerRightPin, GPIO.HIGH)
         GPIO.output(self.__motorSteerLeftPin, GPIO.HIGH)
         GPIO.output(self.__motorSteerRightPin, GPIO.LOW)
         if DEBUG: print("Links fahren")
 
     # Nach rechts lenken
     def __right(self):
-        #if(GPIO.input(self.__motorSteerRightPin) == GPIO.LOW and GPIO.input(self.__motorSteerLeftPin) == GPIO.LOW):
-            #GPIO.output(self.__motorSteerLeftPin, GPIO.HIGH)
-            #GPIO.output(self.__motorSteerRightPin, GPIO.LOW)
         GPIO.output(self.__motorSteerLeftPin, GPIO.LOW)
         GPIO.output(self.__motorSteerRightPin, GPIO.HIGH)
         if DEBUG: print("Rechts fahren")
@@ -153,7 +146,6 @@ class PiCar(Thread):
     
     def __manualDrive(self):
         if(time() - self.__lastManualInput < self.__maxInputDelay):
-            #print(time(), self.__lastManualInput, self.__maxInputDelay)
             if(self.drive == Drive.STOP):
                 self.__stopDrive()
             elif(self.drive == Drive.FRONT):
@@ -206,7 +198,7 @@ class PiCar(Thread):
         space /= self.__tries
         space = space * 1000 / 2
         if DEBUG: print("Distanz gemessen: ", space)
-        return space * 1000 / 2
+        return space * 1000 / 2 # ???
     
      # Distanz vor Wagen messen und bei Bedarf Objekten ausweichen
     def __objectAvoiding(self, cont):
@@ -232,7 +224,7 @@ class PiCar(Thread):
                     bestMatch[0] = i
                     bestMatch[1] = measurements[i]
             Servo.turnServo(90)
-
+            
             if DEBUG: print("Best Match: ", bestMatch)
             if bestMatch[0] == -1: return False
             elif bestMatch[1] < self.__minSpace:
@@ -272,6 +264,5 @@ class PiCar(Thread):
                                 else: return False
                     else: return False
                 else: return False
-
         else: return True
         

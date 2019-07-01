@@ -34,17 +34,15 @@ def runServer(car):
 
         while True:
             try:
-                data = client_sock.recv(256)
-                client_sock.send(data)
+                data = client_sock.recv(256).decode('utf-8')
             except IOError:
                 break
             except:
                 break
             if (len(data) == 0):
                 break
-            data = str(data)[2:-1]
             print(str(time()) + ": Empfangen: " + data)
-            Main.btInput(data, car)
+            Main.btInput(data, car, client_sock)
         
         car.state = State.IDLE
         car.stop()
