@@ -198,7 +198,7 @@ class PiCar(Thread):
         space /= self.__tries
         space = space * 1000 / 2
         if DEBUG: print("Distanz gemessen: ", space)
-        return space * 1000 / 2 # ???
+        return space
     
      # Distanz vor Wagen messen und bei Bedarf Objekten ausweichen
     def __objectAvoiding(self, cont):
@@ -215,6 +215,16 @@ class PiCar(Thread):
             for angle in self.__tryAngles:
                 measurements[i] = self.__measure()
                 i = i + 1
+
+            Servo.turnServo(90)
+            bTries = 0
+            while self.__measure() < self.__minSpace and self.state == State.AUTOMATIC and bTries < 5:
+                self.__backward()
+                sleep(1)
+                bTries += 1
+
+            if bTries >= 5: self.state = State.ERROR
+            if self.state != State.AUTOMATIC: return False
 
             bestMatch = [-1, 100000]
             for i in range(len(self.__tryAngles)):
