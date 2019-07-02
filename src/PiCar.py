@@ -223,8 +223,10 @@ class PiCar(Thread):
                 sleep(1)
                 bTries += 1
 
-            if bTries >= 5: self.state = State.ERROR
+
+            if bTries >= 10: self.state = State.ERROR
             if self.state != State.AUTOMATIC: return False
+            bTries = 0
 
             bestMatch = [-1, 100000]
             for i in range(len(self.__tryAngles)):
@@ -260,7 +262,7 @@ class PiCar(Thread):
 
                     if self.state == State.AUTOMATIC:
                         self.__forward()
-                        sleep(drivingtime)
+                        sleep(drivingtime + 1)
                         self.__stopSteer()
                         if self.__objectAvoiding(False) == False: return False
                         else:
