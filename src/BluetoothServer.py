@@ -31,6 +31,7 @@ def runServer(car):
         print("Verbunden mit: ", client_addr)
 
         subprocess.call(["/home/pi/Desktop/bluetoothconnected.sh"])
+        car.btSocket = client_sock
 
         while True:
             try:
@@ -42,12 +43,13 @@ def runServer(car):
             if (len(data) == 0):
                 break
             print(str(time()) + ": Empfangen: " + data)
-            Main.btInput(data, car, client_sock)
+            Main.btInput(data, car)
         
         car.state = State.IDLE
         car.stop()
         
         print("Verbindung wurde getrennt")
+        car.btSocket = None
         client_sock.close()
         server_sock.close()
         print("Sockets wurden geschlossen")    

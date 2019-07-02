@@ -2,12 +2,13 @@ import serial
 import string
 import pynmea2
 import math
+from geographiclib.geodesic import Geodesic
 
 port = "/dev/ttyS0"
 baudrate = 9600
 timeout = 0.5
 
-tolerance = 0.0005
+tolerance = 0.00003
 
 def readGPS(car):
     ser = serial.Serial(port = port, baudrate = baudrate, timeout = timeout)
@@ -15,7 +16,6 @@ def readGPS(car):
     while True:
         try:
             data = ser.readline().decode('utf-8')
-            #print(data)
         except serial.serialutil.SerialException:
             ser = serial.Serial(port = port, baudrate = baudrate, timeout = timeout)
         except:
@@ -24,11 +24,18 @@ def readGPS(car):
             try:
                 gpsData = pynmea2.parse(data)
                 if(abs(car.latitude - gpsData.latitude) > tolerance or abs(car.longitude - gpsData.longitude) > tolerance):
-                    car.direction = calcDirection((gpsData.latitude, gpsData.longitude), (car.latitude, car.longitude))
+                    car.direction = calcDirection((car.latitude, car.longitude), (gpsData.latitude, gpsData.longitude))
                     car.latitude = gpsData.latitude
                     car.longitude = gpsData.longitude
                     car.destDirection = calcDirection((car.latitude, car.longitude), (car.destLatitude, car.destLongitude))
                     print(car.latitude, car.longitude, car.direction, car.destDirection)
+                    #car.btSocket.send("Auto: " + str(car.direction) + "\n")
+                    #car.btSocket.send("Ziel: " + str(car.destDirection) + "\n")
+                    #car.btSocket.send(str(car.direction - car.destDirection) + "\n")
+                    #car.btSocket.send(str(car.direction - car.destDirection - 360) + "\n")
+                    #car.btSocket.send(str(car.destDirection - car.direction) + "\n")
+
+
             except pynmea2.nmea.ChecksumError:
                 pass
             except:
@@ -38,21 +45,4 @@ def calcDirection(pointA, pointB):
     if (type(pointA) != tuple) or (type(pointB) != tuple):
         raise TypeError("Only tuples are supported as arguments")
 
-    lat1 = math.radians(pointA[0])
-    lat2 = math.radians(pointB[0])
-
-    diffLong = math.radians(pointB[1] - pointA[1])
-
-    x = math.sin(diffLong) * math.cos(lat2)
-    y = math.cos(lat1) * math.sin(lat2) - (math.sin(lat1)
-            * math.cos(lat2) * math.cos(diffLong))
-
-    initial_bearing = math.atan2(x, y)
-
-    # Now we have the initial bearing but math.atan2 return values
-    # from -180° to + 180° which is not what we want for a compass bearing
-    # The solution is to normalize the initial bearing as shown below
-    initial_bearing = math.degrees(initial_bearing)
-    compass_bearing = (initial_bearing + 360) % 360
-
-    return compass_bearing
+    return Geodesic.WGS84.Inverse(pointA[0], pointA[1], pointB[0], pointB[1])['azi1']

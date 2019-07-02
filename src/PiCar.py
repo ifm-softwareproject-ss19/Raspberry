@@ -6,7 +6,7 @@ from GPS import calcDirection
 import Uss
 import Servo
 
-DEBUG = True
+DEBUG = False
 
 class Drive(Enum):
     STOP = 1
@@ -30,6 +30,8 @@ class PiCar(Thread):
     def __init__(self):
         super(PiCar, self).__init__()
         
+        btSocket = None
+        
         self.latitude = 0.0
         self.longitude = 0.0
         self.direction = 0.0
@@ -42,8 +44,8 @@ class PiCar(Thread):
         self.steering = Steering.FORWARD
         self.state = State.IDLE
         
-        self.__gpsTolerance = 0.0005
-        self.__directionTolerance = 1
+        self.__gpsTolerance = 0.00005
+        self.__directionTolerance = 20
         
         self.__maxInputDelay = 0.5
         self.__lastManualInput = 0
@@ -75,7 +77,10 @@ class PiCar(Thread):
         while True:
             if(self.state == State.DESTINATION):
                 self.stop()
-                print("sende Ziel erreicht", self.latitude, self.destLatitude, self.longitude, self.destLongitude)
+                try:
+                    self.btSocket.send("Status %s" % self.state.name)
+                except:
+                    pass
                 self.state = State.IDLE
             
             elif(self.state == State.AUTOMATIC):
@@ -86,10 +91,17 @@ class PiCar(Thread):
                 self.__manualDrive()
                 
             elif(self.state == State.IDLE):
+                #print(self.state)
                 pass
             
             elif(self.state == State.ERROR):
-                pass
+                self.stop()
+                try:
+                    self.btSocket.send("Status %s" % self.state.name)
+                except:
+                    pass
+                self.state = State.IDLE
+
             
     # Vorwärts fahren
     def __forward(self):
@@ -133,6 +145,7 @@ class PiCar(Thread):
         GPIO.output(self.__motorDriveBackwardPin, GPIO.LOW)
         GPIO.output(self.__motorSteerLeftPin, GPIO.LOW)
         GPIO.output(self.__motorSteerRightPin, GPIO.LOW)
+        if DEBUG: print("Alles stoppen")
 
     def startManualDrive(self):
         self.state = State.MANUAL
@@ -160,33 +173,39 @@ class PiCar(Thread):
             elif(self.steering == Steering.RIGHT):
                 self.__right()
         else:
-            #print("ManualDrive Timeout")
             self.__stopDrive()
             self.__stopSteer()
     
     def __automaticDrive(self):
         if(self.__objectAvoiding(False)):
-            print("läuft")
+            if(self.state != State.AUTOMATIC):
+                Servo.p.ChangeDutyCycle(0.0)
+                self.stop()
+                return
+                
             if(abs(self.latitude - self.destLatitude) < self.__gpsTolerance and abs(self.longitude - self.destLongitude) < self.__gpsTolerance):
                 self.stop()
                 self.state = State.DESTINATION
                 
-            elif(abs(self.direction - self.destDirection) > self.__directionTolerance and self.__turnTimer < time() and self.__turnCooldownTimer > time()):
-                if((self.direction - self.destDirection + 360) % 360 > 180):
+            elif(self.__turnCooldownTimer < time()):
+                direction = self.direction - self.destDirection
+                if(direction > 180):
+                    direction -= 360
+                if(direction > self.__directionTolerance):
                     self.__forward()
                     self.__left()
-                else:
+                elif(direction < -self.__directionTolerance):
                     self.__forward()
                     self.__right()
-                self.__turnTimer = time() + ((self.direction - self.destDirection + 360) % 180) / 180 * self.__turnTime
+                self.__turnTimer = time() + (abs(direction) / 180) * self.__turnTime
                 self.__turnCooldownTimer = self.__turnTimer + self.__turnCooldown
                 
-            elif((abs(self.latitude - self.destLatitude) > self.__gpsTolerance or abs(self.longitude - self.destLongitude) > self.__gpsTolerance) and self.__turnTimer < time()):
+            elif(self.__turnTimer < time()):
                 self.__forward()
                 self.__stopSteer()
         else:
-            print(self.state)
-            #self.state = State.ERROR
+            if(self.state == State.AUTOMATIC):
+                self.state = State.ERROR
             
     # Messvorgang: Distanz vor Wagen
     def __measure(self):
@@ -214,19 +233,18 @@ class PiCar(Thread):
             measurements = {}
             for angle in self.__tryAngles:
                 measurements[i] = self.__measure()
-                i = i + 1
-
+                i += 1
+            
             Servo.turnServo(90)
             bTries = 0
-            while self.__measure() < self.__minSpace and self.state == State.AUTOMATIC and bTries < 5:
+            while self.__measure() < self.__minSpace and self.state == State.AUTOMATIC and bTries < 10:
                 self.__backward()
                 sleep(1)
+                self.stop()
                 bTries += 1
-
 
             if bTries >= 10: self.state = State.ERROR
             if self.state != State.AUTOMATIC: return False
-            bTries = 0
 
             bestMatch = [-1, 100000]
             for i in range(len(self.__tryAngles)):
